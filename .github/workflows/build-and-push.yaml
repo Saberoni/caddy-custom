@@ -33,15 +33,20 @@ jobs:
       
       - name: Get caddy tag
         id: tag
-        run: echo "tag=$(grep -Eo 'caddy:[0-9]{1,}.+$' build/Dockerfile | tail -1 | cut -d ':' -f2)" >> $GITHUB_OUTPUT
+        run: echo "tag=$(grep -Eo 'caddy:[0-9]{1,}.[0-9]{1,}.+$' build/Dockerfile | tail -1 | cut -d ':' -f2 | cut -d '-' -f1)" >> $GITHUB_OUTPUT
+      - name: Get caddy platform
+        id: flavor
+        run: echo "flavor=$(grep -Eo 'caddy:[0-9]{1,}.[0-9]{1,}.+$' build/Dockerfile | tail -1 | cut -d ':' -f2 | cut -d '-' -f2)" >> $GITHUB_OUTPUT
       
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v5
         with:
+          flavor: |
+            suffix=-${{ steps.flavor.outputs.flavor }}
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=semver,pattern={{major}}.{{minor}},value=${{ steps.tag.outputs.tag }}
+            type=semver,pattern={{major}}.{{minor}},value=v${{ steps.tag.outputs.tag }}
         
       - name: Build and push container image
         uses: docker/build-push-action@v5
